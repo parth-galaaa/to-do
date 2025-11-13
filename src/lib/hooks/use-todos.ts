@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Todo, TodoInsert, TodoUpdate } from '@/lib/types/database'
 
-export function useTodos() {
+export function useTodos(listId?: string | null) {
   const [todos, setTodos] = useState<Todo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -32,15 +32,21 @@ export function useTodos() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [listId])
 
   const fetchTodos = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
+      let query = supabase
         .from('todos')
         .select('*')
         .order('created_at', { ascending: false })
+
+      if (listId !== undefined) {
+        query = query.eq('list_id', listId)
+      }
+
+      const { data, error } = await query
 
       if (error) throw error
       setTodos(data || [])

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Todo, TodoUpdate } from '@/lib/types/database'
+import { Todo, TodoUpdate, List } from '@/lib/types/database'
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,9 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { motion } from 'framer-motion'
+import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
 
 interface EditTodoDialogProps {
@@ -20,21 +23,32 @@ interface EditTodoDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onUpdate: (id: string, updates: TodoUpdate) => Promise<any>
+  selectedList?: List | null
 }
+
+const priorityOptions = [
+  { value: 'low', label: 'Low', icon: CheckCircle2, color: 'text-emerald-500' },
+  { value: 'medium', label: 'Medium', icon: AlertCircle, color: 'text-amber-500' },
+  { value: 'high', label: 'High', icon: AlertCircle, color: 'text-rose-500' },
+]
 
 export default function EditTodoDialog({
   todo,
   open,
   onOpenChange,
   onUpdate,
+  selectedList,
 }: EditTodoDialogProps) {
   const [title, setTitle] = useState(todo.title)
   const [description, setDescription] = useState(todo.description || '')
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>(todo.priority)
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high' | null>(todo.priority)
   const [dueDate, setDueDate] = useState(
     todo.due_date ? format(new Date(todo.due_date), 'yyyy-MM-dd') : ''
   )
   const [loading, setLoading] = useState(false)
+
+  const requiresPriority = selectedList?.requires_priority ?? true
+  const requiresDueDate = selectedList?.requires_due_date ?? true
 
   useEffect(() => {
     if (open) {
@@ -53,7 +67,7 @@ export default function EditTodoDialog({
       await onUpdate(todo.id, {
         title,
         description: description || null,
-        priority,
+        priority: requiresPriority ? priority : null,
         due_date: dueDate || null,
       })
 
@@ -67,15 +81,20 @@ export default function EditTodoDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle>Edit Todo</DialogTitle>
-          <DialogDescription>Make changes to your todo item.</DialogDescription>
+          <DialogTitle className="text-2xl">Edit Item</DialogTitle>
+          <DialogDescription>
+            Make changes to your item.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
+          <div className="space-y-5 py-4">
+            {/* Title */}
             <div className="space-y-2">
-              <Label htmlFor="edit-title">Title *</Label>
+              <Label htmlFor="edit-title" className="text-sm font-medium">
+                Title <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="edit-title"
                 placeholder="What needs to be done?"
@@ -83,44 +102,73 @@ export default function EditTodoDialog({
                 onChange={(e) => setTitle(e.target.value)}
                 required
                 disabled={loading}
+                className="h-11"
               />
             </div>
+
+            {/* Description */}
             <div className="space-y-2">
-              <Label htmlFor="edit-description">Description</Label>
-              <Input
+              <Label htmlFor="edit-description" className="text-sm font-medium">
+                Description
+              </Label>
+              <Textarea
                 id="edit-description"
-                placeholder="Add more details..."
+                placeholder="Add more details (optional)"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 disabled={loading}
+                className="min-h-20 resize-none"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-priority">Priority</Label>
-              <select
-                id="edit-priority"
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as 'low' | 'medium' | 'high')}
-                disabled={loading}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-dueDate">Due Date</Label>
-              <Input
-                id="edit-dueDate"
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                disabled={loading}
-              />
-            </div>
+
+            {/* Priority - only show if required */}
+            {requiresPriority && (
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Priority</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {priorityOptions.map((option) => {
+                    const Icon = option.icon
+                    return (
+                      <motion.button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setPriority(option.value as 'low' | 'medium' | 'high')}
+                        disabled={loading}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className={`relative flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all ${priority === option.value
+                          ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700'
+                          }`}
+                      >
+                        <Icon className={`h-5 w-5 ${option.color}`} />
+                        <span className="text-xs font-medium">{option.label}</span>
+                      </motion.button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Due Date - only show if required */}
+            {requiresDueDate && (
+              <div className="space-y-2">
+                <Label htmlFor="edit-dueDate" className="text-sm font-medium">
+                  Due Date
+                </Label>
+                <Input
+                  id="edit-dueDate"
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  disabled={loading}
+                  className="h-11"
+                />
+              </div>
+            )}
           </div>
-          <DialogFooter>
+
+          <DialogFooter className="gap-2">
             <Button
               type="button"
               variant="outline"
@@ -129,7 +177,12 @@ export default function EditTodoDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading || !title}>
+            <Button
+              type="submit"
+              disabled={loading || !title}
+              className="gap-2 bg-linear-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
+            >
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               {loading ? 'Saving...' : 'Save Changes'}
             </Button>
           </DialogFooter>
