@@ -18,11 +18,9 @@ export interface Database {
 					id: string
 					user_id: string
 					name: string
-					type: 'tasks' | 'grocery' | 'shopping' | 'custom'
+					type: 'task' | 'casual' // Simplified from 4 types to 2
 					color: string
 					icon: string
-					requires_priority: boolean
-					requires_due_date: boolean
 					created_at: string
 					updated_at: string
 				}
@@ -30,11 +28,9 @@ export interface Database {
 					id?: string
 					user_id: string
 					name: string
-					type: 'tasks' | 'grocery' | 'shopping' | 'custom'
+					type: 'task' | 'casual'
 					color?: string
 					icon?: string
-					requires_priority?: boolean
-					requires_due_date?: boolean
 					created_at?: string
 					updated_at?: string
 				}
@@ -42,11 +38,9 @@ export interface Database {
 					id?: string
 					user_id?: string
 					name?: string
-					type?: 'tasks' | 'grocery' | 'shopping' | 'custom'
+					type?: 'task' | 'casual'
 					color?: string
 					icon?: string
-					requires_priority?: boolean
-					requires_due_date?: boolean
 					created_at?: string
 					updated_at?: string
 				}
@@ -61,7 +55,7 @@ export interface Database {
 					title: string
 					description: string | null
 					completed: boolean
-					priority: 'low' | 'medium' | 'high' | null
+					priority: 'low' | 'medium' | 'high' | null // Allow null for casual lists
 					due_date: string | null
 					created_at: string
 					updated_at: string
@@ -91,6 +85,30 @@ export interface Database {
 					updated_at?: string
 				}
 			}
+			// Define the profiles table for user information
+			profiles: {
+				Row: {
+					id: string
+					full_name: string
+					display_name: string
+					created_at: string
+					updated_at: string
+				}
+				Insert: {
+					id: string
+					full_name: string
+					display_name: string
+					created_at?: string
+					updated_at?: string
+				}
+				Update: {
+					id?: string
+					full_name?: string
+					display_name?: string
+					created_at?: string
+					updated_at?: string
+				}
+			}
 		}
 	}
 }
@@ -103,3 +121,7 @@ export type ListUpdate = Database['public']['Tables']['lists']['Update']
 export type Todo = Database['public']['Tables']['todos']['Row']
 export type TodoInsert = Database['public']['Tables']['todos']['Insert']
 export type TodoUpdate = Database['public']['Tables']['todos']['Update']
+
+export type Profile = Database['public']['Tables']['profiles']['Row']
+export type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
+export type ProfileUpdate = Database['public']['Tables']['profiles']['Update']

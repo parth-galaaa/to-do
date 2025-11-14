@@ -47,8 +47,8 @@ export default function EditTodoDialog({
   )
   const [loading, setLoading] = useState(false)
 
-  const requiresPriority = selectedList?.requires_priority ?? true
-  const requiresDueDate = selectedList?.requires_due_date ?? true
+  // Determine if we should show priority and due date based on list type
+  const showPriorityAndDeadline = selectedList?.type === 'task'
 
   useEffect(() => {
     if (open) {
@@ -64,11 +64,19 @@ export default function EditTodoDialog({
     setLoading(true)
 
     try {
+      // Fix date to prevent timezone issues (saving day before)
+      let formattedDate = null
+      if (dueDate) {
+        // Parse the date as local time and format as YYYY-MM-DD
+        const date = new Date(dueDate + 'T00:00:00')
+        formattedDate = date.toISOString().split('T')[0]
+      }
+
       await onUpdate(todo.id, {
         title,
         description: description || null,
-        priority: requiresPriority ? priority : null,
-        due_date: dueDate || null,
+        priority: showPriorityAndDeadline ? priority : null,
+        due_date: formattedDate,
       })
 
       onOpenChange(false)
@@ -121,8 +129,8 @@ export default function EditTodoDialog({
               />
             </div>
 
-            {/* Priority - only show if required */}
-            {requiresPriority && (
+            {/* Priority - only show for task lists */}
+            {showPriorityAndDeadline && (
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Priority</Label>
                 <div className="grid grid-cols-3 gap-2">
@@ -150,8 +158,8 @@ export default function EditTodoDialog({
               </div>
             )}
 
-            {/* Due Date - only show if required */}
-            {requiresDueDate && (
+            {/* Due Date - only show for task lists */}
+            {showPriorityAndDeadline && (
               <div className="space-y-2">
                 <Label htmlFor="edit-dueDate" className="text-sm font-medium">
                   Due Date

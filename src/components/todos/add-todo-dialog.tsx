@@ -25,9 +25,9 @@ interface AddTodoDialogProps {
 }
 
 const priorityOptions = [
-  { value: 'low', label: 'Low', icon: CheckCircle2, color: 'text-emerald-500' },
-  { value: 'medium', label: 'Medium', icon: AlertCircle, color: 'text-amber-500' },
-  { value: 'high', label: 'High', icon: AlertCircle, color: 'text-rose-500' },
+  { value: 'low', label: 'Low', icon: CheckCircle2, color: 'text-amber-500' },
+  { value: 'medium', label: 'Medium', icon: AlertCircle, color: 'text-orange-500' },
+  { value: 'high', label: 'High', icon: AlertCircle, color: 'text-red-500' },
 ]
 
 export default function AddTodoDialog({ open, onOpenChange, onAdd, selectedList }: AddTodoDialogProps) {
@@ -37,19 +37,27 @@ export default function AddTodoDialog({ open, onOpenChange, onAdd, selectedList 
   const [dueDate, setDueDate] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const requiresPriority = selectedList?.requires_priority ?? true
-  const requiresDueDate = selectedList?.requires_due_date ?? true
+  // Determine if we should show priority and due date based on list type
+  const showPriorityAndDeadline = selectedList?.type === 'task'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
     try {
+      // Fix date to prevent timezone issues (saving day before)
+      let formattedDate = null
+      if (dueDate) {
+        // Parse the date as local time and format as YYYY-MM-DD
+        const date = new Date(dueDate + 'T00:00:00')
+        formattedDate = date.toISOString().split('T')[0]
+      }
+
       await onAdd({
         title,
         description: description || null,
-        priority: requiresPriority ? (priority || 'medium') : null,
-        due_date: dueDate || null,
+        priority: showPriorityAndDeadline ? (priority || 'medium') : null,
+        due_date: formattedDate,
         completed: false,
         list_id: selectedList?.id || null,
       })
@@ -86,7 +94,7 @@ export default function AddTodoDialog({ open, onOpenChange, onAdd, selectedList 
               </Label>
               <Input
                 id="title"
-                placeholder={selectedList?.type === 'grocery' || selectedList?.type === 'shopping'
+                placeholder={selectedList?.type === 'casual'
                   ? "What do you need?"
                   : "What needs to be done?"}
                 value={title}
@@ -112,8 +120,8 @@ export default function AddTodoDialog({ open, onOpenChange, onAdd, selectedList 
               />
             </div>
 
-            {/* Priority - only show if required */}
-            {requiresPriority && (
+            {/* Priority - only show for task lists */}
+            {showPriorityAndDeadline && (
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Priority</Label>
                 <div className="grid grid-cols-3 gap-2">
@@ -128,8 +136,8 @@ export default function AddTodoDialog({ open, onOpenChange, onAdd, selectedList 
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         className={`relative flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all ${priority === option.value
-                          ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700'
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border hover:border-primary/50'
                           }`}
                       >
                         <Icon className={`h-5 w-5 ${option.color}`} />
@@ -141,8 +149,8 @@ export default function AddTodoDialog({ open, onOpenChange, onAdd, selectedList 
               </div>
             )}
 
-            {/* Due Date - only show if required or if user wants it */}
-            {requiresDueDate && (
+            {/* Due Date - only show for task lists */}
+            {showPriorityAndDeadline && (
               <div className="space-y-2">
                 <Label htmlFor="dueDate" className="text-sm font-medium">
                   Due Date
@@ -155,6 +163,17 @@ export default function AddTodoDialog({ open, onOpenChange, onAdd, selectedList 
                   disabled={loading}
                   className="h-11"
                 />
+              </div>
+            )}
+
+            {/* Info about list type */}
+            {selectedList && (
+              <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                {selectedList.type === 'task' ? (
+                  <>📅 Task lists include priority and deadline fields</>
+                ) : (
+                  <>✏️ Casual lists only need title and description</>
+                )}
               </div>
             )}
           </div>
@@ -171,7 +190,7 @@ export default function AddTodoDialog({ open, onOpenChange, onAdd, selectedList 
             <Button
               type="submit"
               disabled={loading || !title}
-              className="gap-2 bg-linear-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
+              className="gap-2 bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               {loading ? 'Adding...' : 'Add Item'}

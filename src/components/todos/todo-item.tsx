@@ -45,8 +45,9 @@ export default function TodoItem({ todo, onToggle, onUpdate, onDelete }: TodoIte
     await onDelete()
   }
 
-  const config = priorityConfig[todo.priority]
-  const PriorityIcon = config.icon
+  // Handle casual lists that don't have priority
+  const config = todo.priority ? priorityConfig[todo.priority] : null
+  const PriorityIcon = config?.icon
 
   return (
     <>
@@ -56,12 +57,10 @@ export default function TodoItem({ todo, onToggle, onUpdate, onDelete }: TodoIte
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <Card 
-          className={`${config.border} ${
-            isDeleting ? 'opacity-50' : ''
-          } ${
-            todo.completed ? 'bg-muted/30 dark:bg-muted/10' : 'bg-card'
-          } hover:shadow-lg transition-all duration-200`}
+        <Card
+          className={`${config?.border || ''} ${isDeleting ? 'opacity-50' : ''
+            } ${todo.completed ? 'bg-muted/30 dark:bg-muted/10' : 'bg-card'
+            } hover:shadow-lg transition-all duration-200`}
         >
           <CardContent className="p-5">
             <div className="flex items-start gap-4">
@@ -80,32 +79,32 @@ export default function TodoItem({ todo, onToggle, onUpdate, onDelete }: TodoIte
               {/* Content */}
               <div className="flex-1 space-y-2 min-w-0">
                 <h3
-                  className={`font-semibold text-base leading-tight transition-all ${
-                    todo.completed 
-                      ? 'line-through text-muted-foreground' 
+                  className={`font-semibold text-base leading-tight transition-all ${todo.completed
+                      ? 'line-through text-muted-foreground'
                       : 'text-foreground'
-                  }`}
+                    }`}
                 >
                   {todo.title}
                 </h3>
-                
+
                 {todo.description && (
-                  <p className={`text-sm leading-relaxed ${
-                    todo.completed 
-                      ? 'text-muted-foreground/70' 
+                  <p className={`text-sm leading-relaxed ${todo.completed
+                      ? 'text-muted-foreground/70'
                       : 'text-muted-foreground'
-                  }`}>
+                    }`}>
                     {todo.description}
                   </p>
                 )}
-                
+
                 {/* Tags and Info */}
                 <div className="flex flex-wrap gap-2 items-center">
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${config.badge} flex items-center gap-1`}>
-                    <PriorityIcon className="h-3 w-3" />
-                    {todo.priority}
-                  </span>
-                  
+                  {config && todo.priority && (
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${config.badge} flex items-center gap-1`}>
+                      {PriorityIcon && <PriorityIcon className="h-3 w-3" />}
+                      {todo.priority}
+                    </span>
+                  )}
+
                   {todo.due_date && (
                     <span className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
                       <Calendar className="h-3 w-3" />
@@ -116,7 +115,7 @@ export default function TodoItem({ todo, onToggle, onUpdate, onDelete }: TodoIte
               </div>
 
               {/* Action Buttons */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: isHovered ? 1 : 0 }}
                 className="flex gap-1"

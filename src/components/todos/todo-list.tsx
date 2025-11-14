@@ -1,33 +1,59 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTodos } from '@/lib/hooks/use-todos'
+import { useLists } from '@/lib/hooks/use-lists'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Plus, Loader2, CheckCircle2, Circle, Clock } from 'lucide-react'
+import { Plus, Loader2, CheckCircle2, Circle, Clock, Calendar, X, List as ListIcon } from 'lucide-react'
 import TodoItem from './todo-item'
 import AddTodoDialog from './add-todo-dialog'
+import { isSameDay } from '@/lib/utils/date-utils'
 
-export default function TodoList() {
+interface TodoListProps {
+  selectedListId: string | null
+  selectedDate?: Date | null
+  onClearDateFilter?: () => void
+}
+
+export default function TodoList({ selectedListId, selectedDate, onClearDateFilter }: TodoListProps) {
   const { todos, loading, addTodo, updateTodo, deleteTodo, toggleTodo } = useTodos()
+  const { lists } = useLists()
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
 
-  const filteredTodos = todos.filter((todo) => {
-    if (filter === 'active') return !todo.completed
-    if (filter === 'completed') return todo.completed
-    return true
-  })
+  // Get selected list
+  const selectedList = useMemo(() => {
+    return selectedListId ? lists.find(l => l.id === selectedListId) : null
+  }, [selectedListId, lists])
 
-  const activeTodos = todos.filter((t) => !t.completed).length
-  const completedTodos = todos.filter((t) => t.completed).length
+  // Filter todos by selected list
+  const listFilteredTodos = useMemo(() => {
+    if (!selectedListId) {
+      return []
+    }
+    return todos.filter(todo => todo.list_id === selectedListId)
+  }, [todos, selectedListId])
 
-  const getGreeting = () => {
-    const hour = new Date().getHours()
-    if (hour < 12) return 'Good Morning'
-    if (hour < 18) return 'Good Afternoon'
-    return 'Good Evening'
+  // Further filter by selected date if provided
+  const dateFilteredTodos = useMemo(() => {
+    if (!selectedDate) return listFilteredTodos
+
+    return listFilteredTodos.filter(todo => {
+      if (!todo.due_date) return false
+      return isSameDay(new Date(todo.due_date), selectedDate)
+    })
+  }, [listFilteredTodos, selectedDate])
+
+  // Show all todos (both active and completed)
+  const filteredTodos = dateFilteredTodos
+
+  const activeTodos = dateFilteredTodos.filter((t) => !t.completed).length
+  const completedTodos = dateFilteredTodos.filter((t) => t.completed).length
+
+  const getListTitle = () => {
+    if (selectedList) return selectedList.name
+    return 'Select a list'
   }
 
   const handleAddTodo = async (todo: any) => {
@@ -43,143 +69,164 @@ export default function TodoList() {
     )
   }
 
+  // Empty state when no list is selected
+  if (!selectedListId) {
+    return (
+      <Card className="border-dashed">
+        <CardContent className="flex flex-col items-center justify-center py-16">
+          <div className="text-center space-y-3">
+            <ListIcon className="h-12 w-12 text-muted-foreground mx-auto" />
+            <h3 className="font-semibold text-lg">No List Selected</h3>
+            <p className="text-sm text-muted-foreground max-w-sm">
+              Select a list from the sidebar or create a new one to get started
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
-    <div className="space-y-8">
-      {/* Hero Section */}
+    <AnimatePresence mode="wait">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="space-y-2"
+        key={selectedListId}
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -20 }}
+        transition={{ duration: 0.3 }}
+        className="space-y-8"
       >
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-          {getGreeting()}.
-        </h1>
-        <p className="text-lg text-muted-foreground">
-          What's your plan for today?
-        </p>
-      </motion.div>
-
-      {/* Add Todo Input */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-      >
-        <Card className="border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 transition-colors cursor-pointer shadow-sm hover:shadow-md"
-          onClick={() => setIsAddDialogOpen(true)}
+        {/* Header with Add Button */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="flex items-start justify-between gap-4"
         >
-          <CardContent className="flex items-center gap-3 p-6">
-            <Plus className="h-5 w-5 text-muted-foreground" />
-            <span className="text-muted-foreground font-medium">Add Todo</span>
-          </CardContent>
-        </Card>
-      </motion.div>
+          <div className="space-y-2 flex-1">
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight bg-linear-to-r from-foreground to-foreground/70 bg-clip-text">
+              {getListTitle()}
+            </h1>
+            {selectedList && selectedList.type && (
+              <p className="text-lg text-muted-foreground capitalize">
+                {selectedList.type} list
+              </p>
+            )}
+          </div>
+          <Button
+            onClick={() => setIsAddDialogOpen(true)}
+            size="sm"
+            className="gap-2 shrink-0"
+          >
+            <Plus className="h-4 w-4" />
+            Add Item
+          </Button>
+        </motion.div>
 
-      {/* Stats & Filters */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between"
-      >
-        <div className="flex gap-6">
+        {/* Date Filter Indicator */}
+        {selectedDate && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-2 p-3 bg-accent/50 rounded-lg border border-accent"
+          >
+            <Calendar className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium">
+              Showing items due on {selectedDate.toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+              })}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClearDateFilter}
+              className="ml-auto h-6 px-2"
+            >
+              <X className="h-4 w-4" />
+              Clear
+            </Button>
+          </motion.div>
+        )}
+
+        {/* Stats (no filter buttons) */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="flex gap-6"
+        >
           <div className="flex items-center gap-2">
-            <Circle className="h-4 w-4 text-blue-500" />
+            <Circle className="h-4 w-4 text-amber-500" />
             <span className="text-sm font-medium">{activeTodos} Active</span>
           </div>
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-green-500" />
             <span className="text-sm font-medium">{completedTodos} Completed</span>
           </div>
-        </div>
-        
-        <div className="flex gap-2">
-          <Button
-            variant={filter === 'all' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setFilter('all')}
-            className="rounded-full"
-          >
-            All
-          </Button>
-          <Button
-            variant={filter === 'active' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setFilter('active')}
-            className="rounded-full"
-          >
-            Active
-          </Button>
-          <Button
-            variant={filter === 'completed' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setFilter('completed')}
-            className="rounded-full"
-          >
-            Completed
-          </Button>
-        </div>
-      </motion.div>
+        </motion.div>
 
-      {/* Todo List */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-      >
-        {filteredTodos.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-16">
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.5 }}
-                className="text-center space-y-3"
-              >
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                  <Clock className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="font-semibold text-lg">No todos yet</h3>
-                <p className="text-sm text-muted-foreground max-w-sm">
-                  {filter === 'all'
-                    ? 'Get started by adding your first todo above'
-                    : filter === 'active'
-                    ? 'No active todos. Great job staying on top of things!'
-                    : 'No completed todos yet. Keep working!'}
-                </p>
-              </motion.div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            <AnimatePresence mode="popLayout">
-              {filteredTodos.map((todo, index) => (
+        {/* Todo List */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          {filteredTodos.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-16">
                 <motion.div
-                  key={todo.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -100, height: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.5 }}
+                  className="text-center space-y-3"
                 >
-                  <TodoItem
-                    todo={todo}
-                    onToggle={(completed) => toggleTodo(todo.id, completed)}
-                    onUpdate={updateTodo}
-                    onDelete={() => deleteTodo(todo.id)}
-                  />
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                    <Clock className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-lg">No items yet</h3>
+                  <p className="text-sm text-muted-foreground max-w-sm">
+                    {selectedDate
+                      ? 'No items due on this date'
+                      : 'Get started by adding your first item above'
+                    }
+                  </p>
                 </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        )}
-      </motion.div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              <AnimatePresence mode="popLayout">
+                {filteredTodos.map((todo, index) => (
+                  <motion.div
+                    key={todo.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: -100, height: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                  >
+                    <TodoItem
+                      todo={todo}
+                      onToggle={(completed) => toggleTodo(todo.id, completed)}
+                      onUpdate={updateTodo}
+                      onDelete={() => deleteTodo(todo.id)}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
+        </motion.div>
 
-      <AddTodoDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-        onAdd={handleAddTodo}
-      />
-    </div>
+        <AddTodoDialog
+          open={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+          onAdd={handleAddTodo}
+          selectedList={selectedList}
+        />
+      </motion.div>
+    </AnimatePresence>
   )
 }

@@ -64,6 +64,18 @@ export function useTodos(listId?: string | null) {
       } = await supabase.auth.getUser()
       if (!user) throw new Error('No user found')
 
+      // Create optimistic todo
+      const optimisticTodo = {
+        ...todo,
+        id: 'temp-' + Date.now(),
+        user_id: user.id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+
+      // Optimistic update
+      setTodos(prev => [optimisticTodo as Todo, ...prev])
+
       const { data, error } = await supabase
         .from('todos')
         .insert([{ ...todo, user_id: user.id }])
@@ -71,14 +83,26 @@ export function useTodos(listId?: string | null) {
         .single()
 
       if (error) throw error
+
+      // Replace optimistic todo with real one
+      setTodos(prev => prev.map(t => t.id === optimisticTodo.id ? data : t))
+
       return data
     } catch (err) {
+      // Revert on error
+      fetchTodos()
       setError(err instanceof Error ? err.message : 'Failed to add todo')
       throw err
     }
   }
 
   const updateTodo = async (id: string, updates: TodoUpdate) => {
+    // Store previous state for rollback
+    const previousTodos = [...todos]
+
+    // Optimistic update
+    setTodos(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t))
+
     try {
       const { data, error } = await supabase
         .from('todos')
@@ -88,26 +112,46 @@ export function useTodos(listId?: string | null) {
         .single()
 
       if (error) throw error
+
+      // Update with actual data from server
+      setTodos(prev => prev.map(t => t.id === id ? data : t))
       return data
     } catch (err) {
+      // Revert on error
+      setTodos(previousTodos)
       setError(err instanceof Error ? err.message : 'Failed to update todo')
       throw err
     }
   }
 
   const deleteTodo = async (id: string) => {
+    // Optimistic update
+    const previousTodos = [...todos]
+    setTodos(prev => prev.filter(t => t.id !== id))
+
     try {
       const { error } = await supabase.from('todos').delete().eq('id', id)
 
       if (error) throw error
     } catch (err) {
+      // Revert on error
+      setTodos(previousTodos)
       setError(err instanceof Error ? err.message : 'Failed to delete todo')
       throw err
     }
   }
 
   const toggleTodo = async (id: string, completed: boolean) => {
-    return updateTodo(id, { completed })
+    // Optimistic update
+    setTodos(prev => prev.map(t => t.id === id ? { ...t, completed } : t))
+
+    try {
+      return await updateTodo(id, { completed })
+    } catch (err) {
+      // Revert on error
+      fetchTodos()
+      throw err
+    }
   }
 
   return {
