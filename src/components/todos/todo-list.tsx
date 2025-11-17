@@ -9,23 +9,19 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Plus, Loader2, CheckCircle2, Circle, Clock, Calendar, X, List as ListIcon } from 'lucide-react'
 import TodoItem from './todo-item'
 import AddTodoDialog from './add-todo-dialog'
-import { isSameDay } from '@/lib/utils/date-utils'
+import { isSameDay, parseDateWithoutTimezone } from '@/lib/utils/date-utils'
 
 interface TodoListProps {
   selectedListId: string | null
+  selectedList: any | null  // Add this line
   selectedDate?: Date | null
   onClearDateFilter?: () => void
 }
 
-export default function TodoList({ selectedListId, selectedDate, onClearDateFilter }: TodoListProps) {
+export default function TodoList({ selectedListId, selectedList, selectedDate, onClearDateFilter }: TodoListProps) {
   const { todos, loading, addTodo, updateTodo, deleteTodo, toggleTodo } = useTodos()
   const { lists } = useLists()
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-
-  // Get selected list
-  const selectedList = useMemo(() => {
-    return selectedListId ? lists.find(l => l.id === selectedListId) : null
-  }, [selectedListId, lists])
 
   // Filter todos by selected list
   const listFilteredTodos = useMemo(() => {
@@ -41,7 +37,7 @@ export default function TodoList({ selectedListId, selectedDate, onClearDateFilt
 
     return listFilteredTodos.filter(todo => {
       if (!todo.due_date) return false
-      return isSameDay(new Date(todo.due_date), selectedDate)
+      return isSameDay(parseDateWithoutTimezone(todo.due_date), selectedDate)
     })
   }, [listFilteredTodos, selectedDate])
 
@@ -226,6 +222,7 @@ export default function TodoList({ selectedListId, selectedDate, onClearDateFilt
           onOpenChange={setIsAddDialogOpen}
           onAdd={handleAddTodo}
           selectedList={selectedList}
+          key={selectedList?.id}
         />
       </motion.div>
     </AnimatePresence>

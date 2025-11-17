@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { useTodos } from '@/lib/hooks/use-todos'
 import { useLists } from '@/lib/hooks/use-lists'
 import { motion } from 'framer-motion'
-import { getDaysInMonth, isSameDay } from '@/lib/utils/date-utils'
+import { getDaysInMonth, isSameDay, parseDateWithoutTimezone } from '@/lib/utils/date-utils'
 import CalendarHeader from './calendar-header'
 import CalendarDay from './calendar-day'
 import { Separator } from '@/components/ui/separator'
@@ -64,7 +64,7 @@ export default function CalendarView({ className, selectedDate, onDateSelect }: 
 		todos.forEach(todo => {
 			// Only count todos that belong to existing lists
 			if (todo.due_date && !todo.completed && todo.list_id && validListIds.has(todo.list_id)) {
-				const dateKey = new Date(todo.due_date).toDateString()
+				const dateKey = parseDateWithoutTimezone(todo.due_date).toDateString()
 				counts[dateKey] = (counts[dateKey] || 0) + 1
 			}
 		})
@@ -100,6 +100,7 @@ export default function CalendarView({ className, selectedDate, onDateSelect }: 
 
 	return (
 		<motion.aside
+			key={`calendar-${todos.length}-${lists.length}`}
 			initial={{ x: 100, opacity: 0 }}
 			animate={{ x: 0, opacity: 1 }}
 			transition={{ duration: 0.3 }}

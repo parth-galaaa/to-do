@@ -69,3 +69,14 @@ export function getMonthName(month: number): string {
 export function isSameDay(date1: Date, date2: Date): boolean {
 	return startOfDay(date1).getTime() === startOfDay(date2).getTime()
 }
+
+/**
+ * Parse a date string from the database without timezone conversion
+ * Treats the date as local date, not UTC
+ */
+export function parseDateWithoutTimezone(dateString: string): Date {
+	// Split the date string (format: YYYY-MM-DD)
+	const [year, month, day] = dateString.split('T')[0].split('-').map(Number)
+	// Create date in local timezone
+	return new Date(year, month - 1, day)
+}

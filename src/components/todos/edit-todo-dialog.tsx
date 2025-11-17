@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { motion } from 'framer-motion'
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
+import { parseDateWithoutTimezone } from '@/lib/utils/date-utils'
 
 interface EditTodoDialogProps {
   todo: Todo
@@ -43,7 +44,7 @@ export default function EditTodoDialog({
   const [description, setDescription] = useState(todo.description || '')
   const [priority, setPriority] = useState<'low' | 'medium' | 'high' | null>(todo.priority)
   const [dueDate, setDueDate] = useState(
-    todo.due_date ? format(new Date(todo.due_date), 'yyyy-MM-dd') : ''
+    todo.due_date ? format(parseDateWithoutTimezone(todo.due_date), 'yyyy-MM-dd') : ''
   )
   const [loading, setLoading] = useState(false)
 
@@ -55,7 +56,7 @@ export default function EditTodoDialog({
       setTitle(todo.title)
       setDescription(todo.description || '')
       setPriority(todo.priority)
-      setDueDate(todo.due_date ? format(new Date(todo.due_date), 'yyyy-MM-dd') : '')
+      setDueDate(todo.due_date ? format(parseDateWithoutTimezone(todo.due_date), 'yyyy-MM-dd') : '')
     }
   }, [open, todo])
 

@@ -9,6 +9,7 @@ import { Pencil, Trash2, Calendar, AlertCircle, CheckCircle2 } from 'lucide-reac
 import { format } from 'date-fns'
 import { motion } from 'framer-motion'
 import EditTodoDialog from './edit-todo-dialog'
+import { parseDateWithoutTimezone } from '@/lib/utils/date-utils'
 
 interface TodoItemProps {
   todo: Todo
@@ -63,7 +64,7 @@ export default function TodoItem({ todo, onToggle, onUpdate, onDelete, selectedL
             } ${todo.completed ? 'bg-muted/30 dark:bg-muted/10' : 'bg-card'
             } hover:shadow-lg transition-all duration-200`}
         >
-          <CardContent className="p-5">
+          <CardContent className="p-4">
             <div className="flex items-start gap-4">
               {/* Checkbox */}
               <motion.div
@@ -83,26 +84,26 @@ export default function TodoItem({ todo, onToggle, onUpdate, onDelete, selectedL
                 <div className="flex items-start justify-between gap-3 mb-1">
                   <h3
                     className={`font-semibold text-base leading-tight transition-all flex-1 ${todo.completed
-                        ? 'line-through text-muted-foreground'
-                        : 'text-foreground'
+                      ? 'line-through text-muted-foreground'
+                      : 'text-foreground'
                       }`}
                   >
                     {todo.title}
                   </h3>
 
-                  {/* Priority and Date Badges - Far Right */}
-                  <div className="flex items-center gap-2 shrink-0">
+                  {/* Priority and Date Badges - Far Right, Stacked Vertically */}
+                  <div className="flex flex-col items-end gap-1 shrink-0">
                     {config && todo.priority && (
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${config.badge} flex items-center gap-1`}>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${config.badge} flex items-center gap-1`}>
                         {PriorityIcon && <PriorityIcon className="h-3 w-3" />}
                         {todo.priority}
                       </span>
                     )}
 
                     {todo.due_date && (
-                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                         <Calendar className="h-3 w-3" />
-                        {format(new Date(todo.due_date), 'MMM dd, yyyy')}
+                        {format(parseDateWithoutTimezone(todo.due_date), 'MMM dd')}
                       </span>
                     )}
                   </div>
@@ -111,8 +112,8 @@ export default function TodoItem({ todo, onToggle, onUpdate, onDelete, selectedL
                 {/* Description */}
                 {todo.description && (
                   <p className={`text-sm leading-relaxed ${todo.completed
-                      ? 'text-muted-foreground/70'
-                      : 'text-muted-foreground'
+                    ? 'text-muted-foreground/70'
+                    : 'text-muted-foreground'
                     }`}>
                     {todo.description}
                   </p>

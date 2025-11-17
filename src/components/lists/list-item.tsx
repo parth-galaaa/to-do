@@ -76,6 +76,7 @@ export default function ListItem({
 				<motion.div
 					animate={{ x: isHovered ? -8 : 0 }}
 					transition={{ duration: 0.2 }}
+					key={`count-${todoCount}`}
 				>
 					{todoCount > 0 && (
 						<Badge

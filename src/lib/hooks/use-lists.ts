@@ -117,9 +117,6 @@ export function useLists() {
 	const deleteList = async (id: string) => {
 		const previousLists = [...lists]
 
-		// Optimistic update
-		setLists(prev => prev.filter(l => l.id !== id))
-
 		try {
 			// First, delete all todos associated with this list
 			const { error: todosError } = await supabase
@@ -133,6 +130,12 @@ export function useLists() {
 			const { error } = await supabase.from('lists').delete().eq('id', id)
 
 			if (error) throw error
+
+			// Optimistic update after deletion succeeds
+			setLists(prev => prev.filter(l => l.id !== id))
+
+			// Give real-time subscriptions a moment to catch up
+			await new Promise(resolve => setTimeout(resolve, 100))
 		} catch (err) {
 			setLists(previousLists) // Revert on error
 			setError(err instanceof Error ? err.message : 'Failed to delete list')

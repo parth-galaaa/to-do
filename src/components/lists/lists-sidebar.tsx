@@ -44,12 +44,10 @@ export default function ListsSidebar({ selectedListId, onSelectList, className }
 		try {
 			const newList = await addList(list)
 			setIsAddDialogOpen(false)
-			// Wait a brief moment for state to sync, then select
-			setTimeout(() => {
-				if (newList) {
-					onSelectList(newList.id)
-				}
-			}, 100)
+			// Immediately select the new list - the list will be available optimistically
+			if (newList) {
+				onSelectList(newList.id)
+			}
 		} catch (error) {
 			console.error('Failed to add list:', error)
 		}

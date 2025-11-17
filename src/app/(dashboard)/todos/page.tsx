@@ -7,8 +7,10 @@ import CalendarView from '@/components/calendar/calendar-view'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { List as ListIcon, Calendar as CalendarIcon, X } from 'lucide-react'
+import { useLists } from '@/lib/hooks/use-lists'
 
 export default function TodosPage() {
+  const { lists } = useLists()
   const [selectedListId, setSelectedListId] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [showCalendar, setShowCalendar] = useState(false)
@@ -68,6 +70,7 @@ export default function TodosPage() {
           <div className="container max-w-full px-3 md:px-8 py-3 md:py-8">
             <TodoList
               selectedListId={selectedListId}
+              selectedList={lists.find(l => l.id === selectedListId) || null}
               selectedDate={selectedDate}
               onClearDateFilter={() => setSelectedDate(null)}
             />

@@ -43,9 +43,9 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20">
       <header className="border-b bg-background/80 backdrop-blur-xl sticky top-0 z-50 shadow-sm">
-        <div className="container mx-auto px-3 md:px-4 py-3 md:py-4">
+        <div className="w-full px-3 md:px-6 py-3 md:py-4">
           <div className="flex items-center justify-between gap-4">
-            {/* Logo and Greeting - Far Left */}
+            {/* Logo and Greeting - Extreme Left */}
             <div className="flex items-center gap-2 md:gap-3">
               <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-linear-to-br from-primary to-primary/70 flex items-center justify-center shadow-md shrink-0">
                 <svg
@@ -67,7 +67,7 @@ export default function DashboardLayout({
               </h1>
             </div>
 
-            {/* Actions - Far Right */}
+            {/* Actions - Extreme Right */}
             <div className="flex items-center gap-1 md:gap-2 shrink-0">
               <ThemeToggle />
               <SettingsMenu user={user} profile={profile} />
