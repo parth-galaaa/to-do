@@ -29,7 +29,6 @@ export default function ListsSidebar({ selectedListId, onSelectList, className }
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 	const [selectedList, setSelectedList] = useState<List | null>(null)
 
-	// Calculate todo counts per list (excluding completed)
 	const listTodoCounts = useMemo(() => {
 		const counts: Record<string, number> = {}
 		todos.forEach(todo => {
@@ -45,12 +44,9 @@ export default function ListsSidebar({ selectedListId, onSelectList, className }
 			const newList = await addList(listData)
 			setIsAddDialogOpen(false)
 
+			// Select the list using the REAL ID returned from DB
 			if (newList && newList.id) {
-				// Small delay to allow the broadcastUpdate -> fetchLists cycle to complete
-				// in the parent component before we select it.
-				setTimeout(() => {
-					onSelectList(newList.id)
-				}, 100)
+				onSelectList(newList.id)
 			}
 		} catch (error) {
 			console.error('Failed to add list:', error)
@@ -65,13 +61,9 @@ export default function ListsSidebar({ selectedListId, onSelectList, className }
 	const handleDeleteList = async (id: string) => {
 		try {
 			await deleteList(id)
-
-			// 3. Bug Fix: If we deleted the currently selected list, clear the selection
-			// so the main view doesn't show a "ghost" list.
 			if (selectedListId === id) {
 				onSelectList(null)
 			}
-
 			setIsDeleteDialogOpen(false)
 		} catch (error) {
 			console.error('Failed to delete list:', error)
@@ -83,7 +75,9 @@ export default function ListsSidebar({ selectedListId, onSelectList, className }
 		setIsDeleteDialogOpen(true)
 	}
 
-	if (loading) {
+	// FIX: Only show full loading state if we have NO data.
+	// If we are refreshing in the background, keep showing the current list.
+	if (loading && lists.length === 0) {
 		return (
 			<div className={`border-r bg-card flex items-center justify-center ${className}`}>
 				<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

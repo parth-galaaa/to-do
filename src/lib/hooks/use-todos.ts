@@ -12,10 +12,9 @@ export function useTodos(listId?: string | null) {
   const [error, setError] = useState<string | null>(null)
   const supabase = createClient()
 
-  // Memoize fetchTodos
   const fetchTodos = useCallback(async () => {
     try {
-      // Only show loading spinner on initial empty state to avoid flickering
+      // Only show loading spinner on initial empty state
       if (todos.length === 0) setLoading(true)
 
       let query = supabase
@@ -36,7 +35,7 @@ export function useTodos(listId?: string | null) {
     } finally {
       setLoading(false)
     }
-  }, [listId, supabase]) // Added deps
+  }, [listId, supabase])
 
   const broadcastUpdate = () => {
     if (typeof window !== 'undefined') {
@@ -47,13 +46,11 @@ export function useTodos(listId?: string | null) {
   useEffect(() => {
     fetchTodos()
 
-    // 1. Listen for local updates (sync Calendar and List views)
     const handleLocalUpdate = () => fetchTodos()
     if (typeof window !== 'undefined') {
       window.addEventListener(TODOS_UPDATED_EVENT, handleLocalUpdate)
     }
 
-    // 2. Listen for Realtime updates
     const channelId = `todos-channel-${listId || 'all-items'}`
     const channel = supabase
       .channel(channelId)
@@ -64,7 +61,6 @@ export function useTodos(listId?: string | null) {
           if (listId) {
             const newItem = payload.new as Todo
             const oldItem = payload.old as Todo
-            // Filter irrelevant updates
             if (
               (newItem && newItem.list_id !== listId) &&
               (oldItem && oldItem.list_id !== listId) &&
@@ -91,9 +87,12 @@ export function useTodos(listId?: string | null) {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('No user found')
 
+      // FIX: Generate stable UUID client-side
+      const newId = crypto.randomUUID()
+
       const optimisticTodo = {
         ...todo,
-        id: 'temp-' + Date.now(),
+        id: newId,
         user_id: user.id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -104,14 +103,14 @@ export function useTodos(listId?: string | null) {
 
       const { data, error } = await supabase
         .from('todos')
-        .insert([{ ...todo, user_id: user.id }])
+        .insert([{ ...todo, id: newId, user_id: user.id }])
         .select()
         .single()
 
       if (error) throw error
 
-      setTodos(prev => prev.map(t => t.id === optimisticTodo.id ? data : t))
-      broadcastUpdate() // Notify Calendar
+      setTodos(prev => prev.map(t => t.id === newId ? data : t))
+      broadcastUpdate()
       return data
     } catch (err) {
       fetchTodos()
@@ -135,7 +134,7 @@ export function useTodos(listId?: string | null) {
       if (error) throw error
 
       setTodos(prev => prev.map(t => t.id === id ? data : t))
-      broadcastUpdate() // Notify Calendar
+      broadcastUpdate()
       return data
     } catch (err) {
       setTodos(previousTodos)
@@ -151,7 +150,7 @@ export function useTodos(listId?: string | null) {
     try {
       const { error } = await supabase.from('todos').delete().eq('id', id)
       if (error) throw error
-      broadcastUpdate() // Notify Calendar
+      broadcastUpdate()
     } catch (err) {
       setTodos(previousTodos)
       setError(err instanceof Error ? err.message : 'Failed to delete todo')
@@ -162,9 +161,7 @@ export function useTodos(listId?: string | null) {
   const toggleTodo = async (id: string, completed: boolean) => {
     setTodos(prev => prev.map(t => t.id === id ? { ...t, completed } : t))
     try {
-      const data = await updateTodo(id, { completed })
-      // No need to broadcast here as updateTodo already does it
-      return data
+      return await updateTodo(id, { completed })
     } catch (err) {
       fetchTodos()
       throw err

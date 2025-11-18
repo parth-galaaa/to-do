@@ -15,9 +15,9 @@ export function useLists() {
 
 	const fetchLists = useCallback(async () => {
 		try {
-			// Don't set loading to true here to prevent UI flashing during background updates
-			// only set it on initial load if lists is empty
-			if (lists.length === 0) setLoading(true)
+			// FIX 1: Do NOT set loading(true) here. 
+			// Only initialize loading as true. This prevents the sidebar from 
+			// flashing a spinner during background updates.
 
 			const { data, error } = await supabase
 				.from('lists')
@@ -31,9 +31,8 @@ export function useLists() {
 		} finally {
 			setLoading(false)
 		}
-	}, [supabase]) // Removed 'lists.length' to strictly follow deps
+	}, [supabase])
 
-	// Helper to broadcast updates to other components
 	const broadcastUpdate = () => {
 		if (typeof window !== 'undefined') {
 			window.dispatchEvent(new CustomEvent(LISTS_UPDATED_EVENT))
@@ -43,13 +42,11 @@ export function useLists() {
 	useEffect(() => {
 		fetchLists()
 
-		// 1. Listen for local updates (from other components)
 		const handleLocalUpdate = () => fetchLists()
 		if (typeof window !== 'undefined') {
 			window.addEventListener(LISTS_UPDATED_EVENT, handleLocalUpdate)
 		}
 
-		// 2. Listen for DB updates (Supabase Realtime)
 		const channel = supabase
 			.channel('lists-changes')
 			.on(
@@ -72,28 +69,33 @@ export function useLists() {
 			const { data: { user } } = await supabase.auth.getUser()
 			if (!user) throw new Error('No user found')
 
-			// Optimistic update
+			// FIX 2: Generate the REAL UUID here on the client.
+			// This prevents the "key swap" flicker because the ID stays consistent 
+			// from optimistic update -> DB insert.
+			const newId = crypto.randomUUID()
+
 			const optimisticList = {
 				...list,
-				id: 'temp-' + Date.now(),
+				id: newId, // Use the permanent ID immediately
 				user_id: user.id,
 				created_at: new Date().toISOString(),
 				updated_at: new Date().toISOString(),
 			}
+
+			// Optimistic update
 			setLists(prev => [...prev, optimisticList as List])
 
 			const { data, error } = await supabase
 				.from('lists')
-				.insert([{ ...list, user_id: user.id }])
+				.insert([{ ...list, id: newId, user_id: user.id }]) // Send ID to DB
 				.select()
 				.single()
 
 			if (error) throw error
 
-			// Replace optimistic with real data
-			setLists(prev => prev.map(l => l.id === optimisticList.id ? data : l))
+			// Update with server data (though IDs match, so no visual flicker)
+			setLists(prev => prev.map(l => l.id === newId ? data : l))
 
-			// Broadcast change so Parent/Sidebar sync up
 			broadcastUpdate()
 
 			return data
@@ -130,7 +132,6 @@ export function useLists() {
 
 	const deleteList = async (id: string) => {
 		const previousLists = [...lists]
-		// Optimistic update
 		setLists(prev => prev.filter(l => l.id !== id))
 
 		try {
