@@ -56,7 +56,7 @@ export default function AddTodoDialog({ open, onOpenChange, onAdd, selectedList 
       await onAdd({
         title,
         description: description || null,
-        priority: showPriorityAndDeadline ? (priority || 'medium') : null,
+        priority: showPriorityAndDeadline ? priority : null,  // Remove the || 'medium'
         due_date: formattedDate,
         completed: false,
         list_id: selectedList?.id || null,
