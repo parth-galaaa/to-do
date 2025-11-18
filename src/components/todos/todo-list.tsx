@@ -64,13 +64,30 @@ export default function TodoList({ selectedListId, selectedList, selectedDate, o
     setIsAddDialogOpen(false)
   }
 
-  if (loading) {
+  // --- FIX START: Handle Sync Latency States ---
+
+  // 1. Critical Fix for "Can't select new list": 
+  // If we have an ID but the list object hasn't synced from the parent yet, show a loader.
+  // This prevents the UI from trying to render a null list or showing "No List Selected" incorrectly.
+  if (selectedListId && !selectedList) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary/50" />
+      </div>
+    )
+  }
+
+  // 2. Optimization: Only show full-screen loader if we have NO data yet.
+  // If we are re-fetching in the background, keep showing the old data to prevent flashing.
+  if (loading && todos.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
+
+  // --- FIX END ---
 
   if (!selectedListId) {
     return (

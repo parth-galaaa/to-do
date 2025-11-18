@@ -42,13 +42,15 @@ export default function ListsSidebar({ selectedListId, onSelectList, className }
 
 	const handleAddList = async (listData: any) => {
 		try {
-			// 1. Wait for the DB to return the real object (including the real ID)
 			const newList = await addList(listData)
 			setIsAddDialogOpen(false)
 
-			// 2. Select the list using the REAL ID, not a temporary optimistic one
 			if (newList && newList.id) {
-				onSelectList(newList.id)
+				// Small delay to allow the broadcastUpdate -> fetchLists cycle to complete
+				// in the parent component before we select it.
+				setTimeout(() => {
+					onSelectList(newList.id)
+				}, 100)
 			}
 		} catch (error) {
 			console.error('Failed to add list:', error)

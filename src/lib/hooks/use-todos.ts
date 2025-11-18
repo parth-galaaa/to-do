@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Todo, TodoInsert, TodoUpdate } from '@/lib/types/database'
+
+const TODOS_UPDATED_EVENT = 'todos-updated-event'
 
 export function useTodos(listId?: string | null) {
   const [todos, setTodos] = useState<Todo[]>([])
@@ -10,52 +12,12 @@ export function useTodos(listId?: string | null) {
   const [error, setError] = useState<string | null>(null)
   const supabase = createClient()
 
-  useEffect(() => {
-    fetchTodos()
-
-    // 5. Bug Fix: Use a unique channel name based on listId.
-    // If we use 'todos-changes' for everything, the Calendar view subscription
-    // and the TodoList subscription will clash, causing one to disconnect.
-    const channelId = `todos-channel-${listId || 'all-items'}`
-
-    const channel = supabase
-      .channel(channelId)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'todos',
-        },
-        (payload) => {
-          // Optimization: If we are filtering by listId, only refetch
-          // if the changed item belongs to this list (or was deleted from it)
-          if (listId) {
-            const newItem = payload.new as Todo
-            const oldItem = payload.old as Todo
-
-            // If the update isn't relevant to this specific list view, skip refetch
-            if (
-              (newItem && newItem.list_id !== listId) &&
-              (oldItem && oldItem.list_id !== listId) &&
-              payload.eventType !== 'DELETE'
-            ) {
-              return
-            }
-          }
-          fetchTodos()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [listId])
-
-  const fetchTodos = async () => {
+  // Memoize fetchTodos
+  const fetchTodos = useCallback(async () => {
     try {
-      setLoading(true)
+      // Only show loading spinner on initial empty state to avoid flickering
+      if (todos.length === 0) setLoading(true)
+
       let query = supabase
         .from('todos')
         .select('*')
@@ -74,16 +36,61 @@ export function useTodos(listId?: string | null) {
     } finally {
       setLoading(false)
     }
+  }, [listId, supabase]) // Added deps
+
+  const broadcastUpdate = () => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(TODOS_UPDATED_EVENT))
+    }
   }
+
+  useEffect(() => {
+    fetchTodos()
+
+    // 1. Listen for local updates (sync Calendar and List views)
+    const handleLocalUpdate = () => fetchTodos()
+    if (typeof window !== 'undefined') {
+      window.addEventListener(TODOS_UPDATED_EVENT, handleLocalUpdate)
+    }
+
+    // 2. Listen for Realtime updates
+    const channelId = `todos-channel-${listId || 'all-items'}`
+    const channel = supabase
+      .channel(channelId)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'todos' },
+        (payload) => {
+          if (listId) {
+            const newItem = payload.new as Todo
+            const oldItem = payload.old as Todo
+            // Filter irrelevant updates
+            if (
+              (newItem && newItem.list_id !== listId) &&
+              (oldItem && oldItem.list_id !== listId) &&
+              payload.eventType !== 'DELETE'
+            ) {
+              return
+            }
+          }
+          fetchTodos()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+      if (typeof window !== 'undefined') {
+        window.removeEventListener(TODOS_UPDATED_EVENT, handleLocalUpdate)
+      }
+    }
+  }, [listId, fetchTodos, supabase])
 
   const addTodo = async (todo: Omit<TodoInsert, 'user_id'>) => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('No user found')
 
-      // Create optimistic todo
       const optimisticTodo = {
         ...todo,
         id: 'temp-' + Date.now(),
@@ -93,7 +100,6 @@ export function useTodos(listId?: string | null) {
         completed: false
       }
 
-      // Optimistic update
       setTodos(prev => [optimisticTodo as Todo, ...prev])
 
       const { data, error } = await supabase
@@ -104,12 +110,10 @@ export function useTodos(listId?: string | null) {
 
       if (error) throw error
 
-      // Replace optimistic todo with real one
       setTodos(prev => prev.map(t => t.id === optimisticTodo.id ? data : t))
-
+      broadcastUpdate() // Notify Calendar
       return data
     } catch (err) {
-      // Revert on error
       fetchTodos()
       setError(err instanceof Error ? err.message : 'Failed to add todo')
       throw err
@@ -118,8 +122,6 @@ export function useTodos(listId?: string | null) {
 
   const updateTodo = async (id: string, updates: TodoUpdate) => {
     const previousTodos = [...todos]
-
-    // Optimistic update
     setTodos(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t))
 
     try {
@@ -132,11 +134,10 @@ export function useTodos(listId?: string | null) {
 
       if (error) throw error
 
-      // Update with actual data from server
       setTodos(prev => prev.map(t => t.id === id ? data : t))
+      broadcastUpdate() // Notify Calendar
       return data
     } catch (err) {
-      // Revert on error
       setTodos(previousTodos)
       setError(err instanceof Error ? err.message : 'Failed to update todo')
       throw err
@@ -149,8 +150,8 @@ export function useTodos(listId?: string | null) {
 
     try {
       const { error } = await supabase.from('todos').delete().eq('id', id)
-
       if (error) throw error
+      broadcastUpdate() // Notify Calendar
     } catch (err) {
       setTodos(previousTodos)
       setError(err instanceof Error ? err.message : 'Failed to delete todo')
@@ -160,9 +161,10 @@ export function useTodos(listId?: string | null) {
 
   const toggleTodo = async (id: string, completed: boolean) => {
     setTodos(prev => prev.map(t => t.id === id ? { ...t, completed } : t))
-
     try {
-      return await updateTodo(id, { completed })
+      const data = await updateTodo(id, { completed })
+      // No need to broadcast here as updateTodo already does it
+      return data
     } catch (err) {
       fetchTodos()
       throw err

@@ -4,16 +4,21 @@ import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { List, ListInsert, ListUpdate } from '@/lib/types/database'
 
+// Event name for cross-component communication
+const LISTS_UPDATED_EVENT = 'lists-updated-event'
+
 export function useLists() {
 	const [lists, setLists] = useState<List[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 	const supabase = createClient()
 
-	// Use useCallback to memoize fetchLists and avoid stale closures
 	const fetchLists = useCallback(async () => {
 		try {
-			setLoading(true)
+			// Don't set loading to true here to prevent UI flashing during background updates
+			// only set it on initial load if lists is empty
+			if (lists.length === 0) setLoading(true)
+
 			const { data, error } = await supabase
 				.from('lists')
 				.select('*')
@@ -26,38 +31,45 @@ export function useLists() {
 		} finally {
 			setLoading(false)
 		}
-	}, [supabase])
+	}, [supabase]) // Removed 'lists.length' to strictly follow deps
+
+	// Helper to broadcast updates to other components
+	const broadcastUpdate = () => {
+		if (typeof window !== 'undefined') {
+			window.dispatchEvent(new CustomEvent(LISTS_UPDATED_EVENT))
+		}
+	}
 
 	useEffect(() => {
 		fetchLists()
 
-		// Set up real-time subscription with proper dependency handling
+		// 1. Listen for local updates (from other components)
+		const handleLocalUpdate = () => fetchLists()
+		if (typeof window !== 'undefined') {
+			window.addEventListener(LISTS_UPDATED_EVENT, handleLocalUpdate)
+		}
+
+		// 2. Listen for DB updates (Supabase Realtime)
 		const channel = supabase
 			.channel('lists-changes')
 			.on(
 				'postgres_changes',
-				{
-					event: '*',
-					schema: 'public',
-					table: 'lists',
-				},
-				() => {
-					// This will now use the latest fetchLists function
-					fetchLists()
-				}
+				{ event: '*', schema: 'public', table: 'lists' },
+				() => fetchLists()
 			)
 			.subscribe()
 
 		return () => {
 			supabase.removeChannel(channel)
+			if (typeof window !== 'undefined') {
+				window.removeEventListener(LISTS_UPDATED_EVENT, handleLocalUpdate)
+			}
 		}
-	}, [supabase, fetchLists]) // Add fetchLists to dependencies
+	}, [fetchLists, supabase])
 
 	const addList = async (list: Omit<ListInsert, 'user_id'>) => {
 		try {
-			const {
-				data: { user },
-			} = await supabase.auth.getUser()
+			const { data: { user } } = await supabase.auth.getUser()
 			if (!user) throw new Error('No user found')
 
 			// Optimistic update
@@ -80,9 +92,13 @@ export function useLists() {
 
 			// Replace optimistic with real data
 			setLists(prev => prev.map(l => l.id === optimisticList.id ? data : l))
+
+			// Broadcast change so Parent/Sidebar sync up
+			broadcastUpdate()
+
 			return data
 		} catch (err) {
-			fetchLists() // Revert on error
+			fetchLists()
 			setError(err instanceof Error ? err.message : 'Failed to add list')
 			throw err
 		}
@@ -90,8 +106,6 @@ export function useLists() {
 
 	const updateList = async (id: string, updates: ListUpdate) => {
 		const previousLists = [...lists]
-
-		// Optimistic update
 		setLists(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l))
 
 		try {
@@ -104,11 +118,11 @@ export function useLists() {
 
 			if (error) throw error
 
-			// Update with server data
 			setLists(prev => prev.map(l => l.id === id ? data : l))
+			broadcastUpdate()
 			return data
 		} catch (err) {
-			setLists(previousLists) // Revert on error
+			setLists(previousLists)
 			setError(err instanceof Error ? err.message : 'Failed to update list')
 			throw err
 		}
@@ -116,28 +130,19 @@ export function useLists() {
 
 	const deleteList = async (id: string) => {
 		const previousLists = [...lists]
+		// Optimistic update
+		setLists(prev => prev.filter(l => l.id !== id))
 
 		try {
-			// First, delete all todos associated with this list
-			const { error: todosError } = await supabase
-				.from('todos')
-				.delete()
-				.eq('list_id', id)
-
+			const { error: todosError } = await supabase.from('todos').delete().eq('list_id', id)
 			if (todosError) throw todosError
 
-			// Then delete the list
 			const { error } = await supabase.from('lists').delete().eq('id', id)
-
 			if (error) throw error
 
-			// Optimistic update after deletion succeeds
-			setLists(prev => prev.filter(l => l.id !== id))
-
-			// Give real-time subscriptions a moment to catch up
-			await new Promise(resolve => setTimeout(resolve, 100))
+			broadcastUpdate()
 		} catch (err) {
-			setLists(previousLists) // Revert on error
+			setLists(previousLists)
 			setError(err instanceof Error ? err.message : 'Failed to delete list')
 			throw err
 		}
