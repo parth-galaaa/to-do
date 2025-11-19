@@ -40,15 +40,16 @@ const listTypes = [
 ]
 
 const colorOptions = [
-	{ value: '#d97706', label: 'Amber' },
-	{ value: '#ea580c', label: 'Orange' },
-	{ value: '#dc2626', label: 'Red' },
-	{ value: '#16a34a', label: 'Green' },
-	{ value: '#0891b2', label: 'Cyan' },
-	{ value: '#9333ea', label: 'Purple' },
-	{ value: '#db2777', label: 'Pink' },
-	{ value: '#ca8a04', label: 'Yellow' },
-]
+	{ value: '#EF4444', label: 'Red' },        // Bright Red
+	{ value: '#F59E0B', label: 'Amber' },      // Warm Amber
+	{ value: '#10B981', label: 'Teal' },       // Fresh Teal
+	{ value: '#3B82F6', label: 'Blue' },       // Vivid Blue
+	{ value: '#8B5CF6', label: 'Purple' },     // Soft Purple
+	{ value: '#EC4899', label: 'Pink' },       // Vibrant Pink
+	{ value: '#FACC15', label: 'Yellow' },     // Bright Yellow
+	{ value: '#F97316', label: 'Orange' },     // Warm Orange
+	{ value: '#14B8A6', label: 'Cyan' },       // Cool Cyan
+];
 
 export default function AddListDialog({ open, onOpenChange, onAdd }: AddListDialogProps) {
 	const [name, setName] = useState('')

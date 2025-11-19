@@ -1,13 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Todo, TodoUpdate, List } from '@/lib/types/database'
 import { Card, CardContent } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
-import { Pencil, Trash2, Calendar, AlertCircle, CheckCircle2 } from 'lucide-react'
+import {
+  Pencil,
+  Trash2,
+  Calendar,
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp
+} from 'lucide-react'
 import { format } from 'date-fns'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import EditTodoDialog from './edit-todo-dialog'
 import { parseDateWithoutTimezone } from '@/lib/utils/date-utils'
 
@@ -40,24 +48,36 @@ const priorityConfig = {
 export default function TodoItem({ todo, onToggle, onUpdate, onDelete, selectedList }: TodoItemProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [isHovered, setIsHovered] = useState(false)
+
+  // New state for description expansion
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [isOverflowing, setIsOverflowing] = useState(false)
+  const descriptionRef = useRef<HTMLParagraphElement>(null)
 
   const handleDelete = async () => {
     setIsDeleting(true)
     await onDelete()
   }
 
-  // Handle casual lists that don't have priority
+  // Check if description overflows (needs "Show More" button)
+  useEffect(() => {
+    if (descriptionRef.current) {
+      if (!isExpanded) {
+        const hasOverflow = descriptionRef.current.scrollHeight > descriptionRef.current.clientHeight
+        setIsOverflowing(hasOverflow)
+      }
+    }
+  }, [todo.description, isExpanded])
+
   const config = todo.priority ? priorityConfig[todo.priority] : null
   const PriorityIcon = config?.icon
 
   return (
     <>
       <motion.div
+        layout
         whileHover={{ scale: 1.002, y: -1 }}
         transition={{ duration: 0.15 }}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
         <Card
           className={`${config?.border || ''} ${isDeleting ? 'opacity-50' : ''
@@ -78,90 +98,91 @@ export default function TodoItem({ todo, onToggle, onUpdate, onDelete, selectedL
                 />
               </motion.div>
 
-              {/* Content - Optimized Compact Layout */}
-              <div className="flex-1 min-w-0 space-y-1">
-                {/* Title Row with Priority, Date, and Actions */}
+              {/* Content Container */}
+              <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
-                  {/* Title */}
-                  <h3
-                    className={`font-semibold text-sm leading-tight transition-all flex-1 min-w-0 ${todo.completed
-                      ? 'line-through text-muted-foreground'
-                      : 'text-foreground'
-                      }`}
-                  >
-                    {todo.title}
-                  </h3>
+                  {/* Left Column: Title & Description */}
+                  <div className="flex flex-col min-w-0 w-full">
+                    <h3 className="font-semibold text-md leading-snug">{todo.title}</h3>
 
-                  {/* Right side: Priority, Date (stacked), and Action Buttons */}
-                  <div className="flex items-start gap-2 shrink-0">
-                    {/* Priority and Date Badges - Stacked Vertically */}
-                    {(config && todo.priority) || todo.due_date ? (
-                      <motion.div
-                        className="flex flex-col items-end gap-1"
-                        animate={{ x: isHovered ? -16 : 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        {/* Priority Badge */}
-                        {config && todo.priority && (
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${config.badge} flex items-center gap-1 whitespace-nowrap`}>
-                            {PriorityIcon && <PriorityIcon className="h-3 w-3" />}
-                            {todo.priority}
-                          </span>
-                        )}
-
-                        {/* Date Badge */}
-                        {todo.due_date && (
-                          <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full whitespace-nowrap">
-                            <Calendar className="h-3 w-3" />
-                            {format(parseDateWithoutTimezone(todo.due_date), 'MMM dd')}
-                          </span>
-                        )}
-                      </motion.div>
-                    ) : null}
-
-                    {/* Action Buttons - appear on hover */}
-                    <AnimatePresence>
-                      {isHovered && (
-                        <motion.div
-                          initial={{ opacity: 0, x: 10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 10 }}
-                          transition={{ duration: 0.2 }}
-                          className="flex gap-1"
+                    {todo.description && todo.description.trim().length > 0 && (
+                      <div className="mt-1 pr-1 relative">
+                        <p
+                          ref={descriptionRef}
+                          className={`text-sm leading-normal wrap-break-word transition-all duration-200 ${todo.completed ? 'text-muted-foreground/70' : 'text-muted-foreground'
+                            } ${!isExpanded ? 'line-clamp-2' : ''}`}
                         >
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setIsEditDialogOpen(true)}
-                            disabled={isDeleting}
-                            className="h-7 w-7 hover:bg-primary/10"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={handleDelete}
-                            disabled={isDeleting}
-                            className="h-7 w-7 hover:bg-destructive/10"
-                          >
-                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                          </Button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </div>
+                          {todo.description}
+                        </p>
 
-                {/* Description - Only show if exists */}
-                {todo.description && (
-                  <p className={`text-xs leading-relaxed pr-2 ${todo.completed
-                    ? 'text-muted-foreground/70'
-                    : 'text-muted-foreground'
-                    }`}>
-                    {todo.description}
-                  </p>
-                )}
+                        {(isOverflowing || isExpanded) && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setIsExpanded(!isExpanded)
+                            }}
+                            className="text-xs flex items-center gap-1 mt-1 text-primary/80 hover:text-primary font-medium hover:underline focus:outline-none"
+                          >
+                            {isExpanded ? (
+                              <>Show less <ChevronUp className="h-3 w-3" /></>
+                            ) : (
+                              <>Show more <ChevronDown className="h-3 w-3" /></>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right Column Wrapper: Metadata & Actions */}
+                  <div className="flex items-start gap-2 shrink-0 pl-1">
+
+                    {/* Sub-Col 1: Priority & Date Badges (Vertical Stack) */}
+                    <div className="flex flex-col items-end gap-1.5 min-h-14">
+                      {config && todo.priority ? (
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${config.badge} flex items-center gap-1 whitespace-nowrap h-6`}>
+                          {PriorityIcon && <PriorityIcon className="h-3 w-3" />}
+                          {todo.priority}
+                        </span>
+                      ) : (
+                        // Spacer if priority is missing but date exists to keep alignment
+                        <div className="h-6" />
+                      )}
+
+                      {todo.due_date && (
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full whitespace-nowrap h-6">
+                          <Calendar className="h-3 w-3" />
+                          {format(parseDateWithoutTimezone(todo.due_date), 'MMM dd')}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Sub-Col 2: Action Buttons (Vertical Stack) */}
+                    <div className="flex flex-col gap-1.5">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIsEditDialogOpen(true)}
+                        disabled={isDeleting}
+                        className="h-6 w-6 hover:bg-primary/10 text-muted-foreground hover:text-primary"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className="h-6 w-6 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                    </div>
+                  </div>
+
+                </div>
               </div>
             </div>
           </CardContent>

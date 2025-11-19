@@ -89,15 +89,19 @@ export default function EditTodoDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px]">
+      {/* 1. Constrain modal height and enable flex column */}
+      <DialogContent className="sm:max-w-[520px] max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-2xl">Edit Item</DialogTitle>
           <DialogDescription>
             Make changes to your item.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-5 py-4">
+
+        {/* 2. Form handles the overflow logic */}
+        <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden">
+          {/* 3. Scrollable container for inputs */}
+          <div className="space-y-5 py-4 overflow-y-auto max-h-[60vh] px-1">
             {/* Title */}
             <div className="space-y-2">
               <Label htmlFor="edit-title" className="text-sm font-medium">
@@ -125,7 +129,7 @@ export default function EditTodoDialog({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 disabled={loading}
-                className="min-h-20 resize-none"
+                className="min-h-20 max-h-[200px] resize-none"
               />
             </div>
 
@@ -176,7 +180,7 @@ export default function EditTodoDialog({
             )}
           </div>
 
-          <DialogFooter className="gap-2">
+          <DialogFooter className="gap-2 pt-2">
             <Button
               type="button"
               variant="outline"
@@ -188,7 +192,7 @@ export default function EditTodoDialog({
             <Button
               type="submit"
               disabled={loading || !title}
-              className="gap-2 bg-linear-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
+              className="gap-2 shadow-primary/50"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               {loading ? 'Saving...' : 'Save Changes'}

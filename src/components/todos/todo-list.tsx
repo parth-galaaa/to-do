@@ -143,7 +143,7 @@ export default function TodoList({ selectedListId, selectedList, selectedDate, o
             className="gap-2 shrink-0 shadow-lg shadow-primary/20 rounded-full px-6"
           >
             <Plus className="h-5 w-5" />
-            New Task
+            Add
           </Button>
         </motion.div>
 

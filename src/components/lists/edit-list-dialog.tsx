@@ -24,15 +24,16 @@ interface EditListDialogProps {
 }
 
 const colorOptions = [
-	{ value: '#3b82f6', label: 'Blue' },
-	{ value: '#10b981', label: 'Green' },
-	{ value: '#f59e0b', label: 'Orange' },
-	{ value: '#ef4444', label: 'Red' },
-	{ value: '#8b5cf6', label: 'Purple' },
-	{ value: '#ec4899', label: 'Pink' },
-	{ value: '#14b8a6', label: 'Teal' },
-	{ value: '#f97316', label: 'Amber' },
-]
+	{ value: '#EF4444', label: 'Red' },        // Bright Red
+	{ value: '#F59E0B', label: 'Amber' },      // Warm Amber
+	{ value: '#10B981', label: 'Teal' },       // Fresh Teal
+	{ value: '#3B82F6', label: 'Blue' },       // Vivid Blue
+	{ value: '#8B5CF6', label: 'Purple' },     // Soft Purple
+	{ value: '#EC4899', label: 'Pink' },       // Vibrant Pink
+	{ value: '#FACC15', label: 'Yellow' },     // Bright Yellow
+	{ value: '#F97316', label: 'Orange' },     // Warm Orange
+	{ value: '#14B8A6', label: 'Cyan' },       // Cool Cyan
+];
 
 export default function EditListDialog({ open, onOpenChange, list, onUpdate }: EditListDialogProps) {
 	const [name, setName] = useState('')

@@ -125,8 +125,6 @@ export default function CalendarView({ className, selectedDate, onDateSelect }: 
 					</p>
 				</div>
 
-				<Separator />
-
 				<CalendarHeader
 					currentDate={currentDate}
 					onPreviousMonth={handlePreviousMonth}

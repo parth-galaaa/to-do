@@ -37,7 +37,6 @@ export default function AddTodoDialog({ open, onOpenChange, onAdd, selectedList 
   const [dueDate, setDueDate] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // Determine if we should show priority and due date based on list type
   const showPriorityAndDeadline = selectedList?.type === 'task'
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,24 +44,20 @@ export default function AddTodoDialog({ open, onOpenChange, onAdd, selectedList 
     setLoading(true)
 
     try {
-      // Fix date to prevent timezone issues (saving day before)
       let formattedDate = null
       if (dueDate) {
-        // Use the date string directly without converting to Date object
-        // The input type="date" already gives us YYYY-MM-DD format
         formattedDate = dueDate
       }
 
       await onAdd({
         title,
         description: description || null,
-        priority: showPriorityAndDeadline ? priority : null,  // Remove the || 'medium'
+        priority: showPriorityAndDeadline ? priority : null,
         due_date: formattedDate,
         completed: false,
         list_id: selectedList?.id || null,
       })
 
-      // Reset form
       setTitle('')
       setDescription('')
       setPriority(null)
@@ -76,7 +71,8 @@ export default function AddTodoDialog({ open, onOpenChange, onAdd, selectedList 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px]">
+      {/* 1. Added max-height and flex column to the main Content container */}
+      <DialogContent className="sm:max-w-[520px] max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-2xl">Add New Item</DialogTitle>
           <DialogDescription>
@@ -85,8 +81,10 @@ export default function AddTodoDialog({ open, onOpenChange, onAdd, selectedList 
               : 'Create a new task to stay organized and productive.'}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-5 py-4">
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 overflow-hidden">
+          {/* 2. Added max-height, overflow-y-auto, and padding to this wrapper */}
+          <div className="space-y-5 py-4 overflow-y-auto max-h-[60vh] px-1">
             {/* Title */}
             <div className="space-y-2">
               <Label htmlFor="title" className="text-sm font-medium">
@@ -116,7 +114,8 @@ export default function AddTodoDialog({ open, onOpenChange, onAdd, selectedList 
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 disabled={loading}
-                className="min-h-20 resize-none"
+                // Added max-h here specifically for the text area just in case
+                className="min-h-20 max-h-[200px] resize-none"
               />
             </div>
 
@@ -165,20 +164,9 @@ export default function AddTodoDialog({ open, onOpenChange, onAdd, selectedList 
                 />
               </div>
             )}
-
-            {/* Info about list type */}
-            {selectedList && (
-              <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
-                {selectedList.type === 'task' ? (
-                  <>📅 Task lists include priority and deadline fields</>
-                ) : (
-                  <>✏️ Casual lists only need title and description</>
-                )}
-              </div>
-            )}
           </div>
 
-          <DialogFooter className="gap-2">
+          <DialogFooter className="gap-2 pt-2">
             <Button
               type="button"
               variant="outline"
@@ -190,7 +178,7 @@ export default function AddTodoDialog({ open, onOpenChange, onAdd, selectedList 
             <Button
               type="submit"
               disabled={loading || !title}
-              className="gap-2 bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+              className="gap-2 shadow-primary/50"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               {loading ? 'Adding...' : 'Add Item'}

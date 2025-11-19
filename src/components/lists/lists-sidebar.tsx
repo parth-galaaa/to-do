@@ -7,7 +7,7 @@ import { List } from '@/lib/types/database'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { List as ListIcon, Sparkles, Loader2 } from 'lucide-react'
+import { List as ListIcon, Plus, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ListItem from './list-item'
 import AddListDialog from './add-list-dialog'
@@ -76,7 +76,6 @@ export default function ListsSidebar({ selectedListId, onSelectList, className }
 	}
 
 	// FIX: Only show full loading state if we have NO data.
-	// If we are refreshing in the background, keep showing the current list.
 	if (loading && lists.length === 0) {
 		return (
 			<div className={`border-r bg-card flex items-center justify-center ${className}`}>
@@ -95,27 +94,26 @@ export default function ListsSidebar({ selectedListId, onSelectList, className }
 			>
 				{/* Header */}
 				<div className="p-6 space-y-4">
-					<div className="flex items-center justify-between">
+					{/* UPDATED: Flex container now separates text block and button */}
+					<div className="flex items-start justify-between">
 						<div className="space-y-1">
-							<div className="flex items-center gap-2">
-								<h2 className="text-2xl font-bold tracking-tight">Lists</h2>
-								<Button
-									onClick={() => setIsAddDialogOpen(true)}
-									variant="ghost"
-									size="icon"
-									className="h-8 w-8"
-								>
-									<Sparkles className="h-4 w-4" />
-								</Button>
-							</div>
+							<h2 className="text-2xl font-bold tracking-tight">Lists</h2>
 							<p className="text-sm text-muted-foreground">
 								Organize your tasks by category
 							</p>
 						</div>
+
+						{/* Button moved outside the text div to sit on the far right */}
+						<Button
+							onClick={() => setIsAddDialogOpen(true)}
+							variant="ghost"
+							size="icon"
+							className="h-8 w-8"
+						>
+							<Plus className="h-4 w-4" />
+						</Button>
 					</div>
 				</div>
-
-				<Separator />
 
 				{/* Lists */}
 				<ScrollArea className="flex-1">
