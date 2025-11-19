@@ -1,10 +1,11 @@
 'use client'
 
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { ArrowRight } from 'lucide-react'
+import { SignupDialog } from '@/components/auth/signup-dialog'
+import { LoginDialog } from '@/components/auth/login-dialog'
 
 function useInView() {
 	const ref = useRef<HTMLDivElement>(null)
@@ -36,8 +37,11 @@ function useInView() {
 
 export default function CTASection() {
 	const [ref, inView] = useInView()
+	const [showSignup, setShowSignup] = useState(false)
+	const [showLogin, setShowLogin] = useState(false)
 
 	return (
+		<>
 		<section className="py-24 relative overflow-hidden">
 			<div className="absolute inset-0 bg-linear-to-br from-primary/5 via-background to-secondary/5" />
 
@@ -57,12 +61,10 @@ export default function CTASection() {
 							Join thousands of people who have simplified their task management with our intuitive todo app.
 						</p>
 						<div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-							<Link href="/signup">
-								<Button size="lg" className="gap-2 text-lg px-8">
-									Start Free Today
-									<ArrowRight className="h-5 w-5" />
-								</Button>
-							</Link>
+							<Button size="lg" className="gap-2 text-lg px-8" onClick={() => setShowSignup(true)}>
+								Start Free Today
+								<ArrowRight className="h-5 w-5" />
+							</Button>
 							<p className="text-sm text-muted-foreground">
 								• Free forever
 							</p>
@@ -71,5 +73,17 @@ export default function CTASection() {
 				</motion.div>
 			</div>
 		</section>
+
+		<SignupDialog
+			open={showSignup}
+			onOpenChange={setShowSignup}
+			onLoginClick={() => setShowLogin(true)}
+		/>
+		<LoginDialog
+			open={showLogin}
+			onOpenChange={setShowLogin}
+			onSignupClick={() => setShowSignup(true)}
+		/>
+		</>
 	)
 }

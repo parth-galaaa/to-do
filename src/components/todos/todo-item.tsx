@@ -105,6 +105,7 @@ export default function TodoItem({ todo, onToggle, onUpdate, onDelete, selectedL
                   <div className="flex flex-col min-w-0 w-full">
                     <h3 className="font-semibold text-md leading-snug">{todo.title}</h3>
 
+                    {/* Only show description if it exists, or if list is not casual (to maintain spacing) */}
                     {todo.description && todo.description.trim().length > 0 && (
                       <div className="mt-1 pr-1 relative">
                         <p
@@ -138,16 +139,16 @@ export default function TodoItem({ todo, onToggle, onUpdate, onDelete, selectedL
                   <div className="flex items-start gap-2 shrink-0 pl-1">
 
                     {/* Sub-Col 1: Priority & Date Badges (Vertical Stack) */}
-                    <div className="flex flex-col items-end gap-1.5 min-h-14">
+                    <div className={`flex flex-col items-end gap-1.5 ${selectedList?.type === 'task' ? 'min-h-14' : ''}`}>
                       {config && todo.priority ? (
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${config.badge} flex items-center gap-1 whitespace-nowrap h-6`}>
                           {PriorityIcon && <PriorityIcon className="h-3 w-3" />}
                           {todo.priority}
                         </span>
-                      ) : (
-                        // Spacer if priority is missing but date exists to keep alignment
+                      ) : selectedList?.type === 'task' ? (
+                        // Spacer if priority is missing but date exists to keep alignment (only for task lists)
                         <div className="h-6" />
-                      )}
+                      ) : null}
 
                       {todo.due_date && (
                         <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full whitespace-nowrap h-6">
@@ -157,8 +158,8 @@ export default function TodoItem({ todo, onToggle, onUpdate, onDelete, selectedL
                       )}
                     </div>
 
-                    {/* Sub-Col 2: Action Buttons (Vertical Stack) */}
-                    <div className="flex flex-col gap-1.5">
+                    {/* Sub-Col 2: Action Buttons (Conditional Layout based on list type) */}
+                    <div className={`flex gap-1.5 ${selectedList?.type === 'casual' ? 'flex-row' : 'flex-col'}`}>
                       <Button
                         variant="ghost"
                         size="icon"

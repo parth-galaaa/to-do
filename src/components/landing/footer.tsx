@@ -1,9 +1,14 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { CheckSquare } from 'lucide-react'
+import { SignupDialog } from '@/components/auth/signup-dialog'
+import { LoginDialog } from '@/components/auth/login-dialog'
 
 export default function Footer() {
+	const [showSignup, setShowSignup] = useState(false)
+	const [showLogin, setShowLogin] = useState(false)
 	const currentYear = new Date().getFullYear()
 
 	return (
@@ -33,9 +38,9 @@ export default function Footer() {
 								</Link>
 							</li>
 							<li>
-								<Link href="/signup" className="hover:text-foreground transition-colors">
+								<button onClick={() => setShowSignup(true)} className="hover:text-foreground transition-colors">
 									Pricing
-								</Link>
+								</button>
 							</li>
 						</ul>
 					</div>
@@ -76,9 +81,20 @@ export default function Footer() {
 				</div>
 
 				<div className="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">
-					<p>&copy; {currentYear} Tudu. All rights reserved.</p>
+					<p>&copy; {currentYear} Checkit. All rights reserved.</p>
 				</div>
 			</div>
+
+			<SignupDialog
+				open={showSignup}
+				onOpenChange={setShowSignup}
+				onLoginClick={() => setShowLogin(true)}
+			/>
+			<LoginDialog
+				open={showLogin}
+				onOpenChange={setShowLogin}
+				onSignupClick={() => setShowSignup(true)}
+			/>
 		</footer>
 	)
 }

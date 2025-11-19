@@ -46,9 +46,9 @@ export default function ResetPasswordPage() {
 
 			setSuccess(true)
 
-			// Redirect to login after 2 seconds
+			// Redirect to home after 2 seconds
 			setTimeout(() => {
-				router.push('/login')
+				router.push('/')
 			}, 2000)
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Failed to reset password')
@@ -59,10 +59,10 @@ export default function ResetPasswordPage() {
 
 	if (success) {
 		return (
-			<div className="min-h-screen flex items-center justify-center bg-linear-to-br from-amber-50 to-orange-100 p-4">
+			<div className="min-h-screen flex items-center justify-center bg-linear-to-br from-primary/5 via-background to-secondary/10 p-4">
 				<Card className="w-full max-w-md">
 					<CardHeader className="space-y-1">
-						<CardTitle className="text-2xl font-bold text-center">Password Reset! ✅</CardTitle>
+						<CardTitle className="text-2xl font-bold text-center">Password Reset!</CardTitle>
 						<CardDescription className="text-center">
 							Your password has been successfully reset. Redirecting to login...
 						</CardDescription>
@@ -73,7 +73,7 @@ export default function ResetPasswordPage() {
 	}
 
 	return (
-		<div className="min-h-screen flex items-center justify-center bg-linear-to-br from-amber-50 to-orange-100 p-4">
+		<div className="min-h-screen flex items-center justify-center bg-linear-to-br from-primary/5 via-background to-secondary/10 p-4">
 			<Card className="w-full max-w-md">
 				<CardHeader className="space-y-1">
 					<div className="flex justify-center mb-2">
@@ -89,7 +89,7 @@ export default function ResetPasswordPage() {
 				<form onSubmit={handleResetPassword}>
 					<CardContent className="space-y-4">
 						{error && (
-							<div className="p-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded-md">
+							<div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md">
 								{error}
 							</div>
 						)}

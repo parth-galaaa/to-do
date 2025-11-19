@@ -1,11 +1,16 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
 import { ArrowRight, Sparkles } from 'lucide-react'
+import { SignupDialog } from '@/components/auth/signup-dialog'
+import { LoginDialog } from '@/components/auth/login-dialog'
 
 export default function HeroSection() {
+	const [showSignup, setShowSignup] = useState(false)
+	const [showLogin, setShowLogin] = useState(false)
 	return (
 		<section className="min-h-screen flex items-center justify-center relative overflow-hidden pt-16">
 			{/* Animated background linear */}
@@ -66,12 +71,10 @@ export default function HeroSection() {
 						transition={{ duration: 0.5, delay: 0.3 }}
 						className="flex flex-col sm:flex-row items-center justify-center gap-4"
 					>
-						<Link href="/signup">
-							<Button size="lg" className="gap-2 text-lg px-8">
-								Get Started Free
-								<ArrowRight className="h-5 w-5" />
-							</Button>
-						</Link>
+						<Button size="lg" className="gap-2 text-lg px-8" onClick={() => setShowSignup(true)}>
+							Get Started Free
+							<ArrowRight className="h-5 w-5" />
+						</Button>
 						<Link href="#features">
 							<Button size="lg" variant="outline" className="text-lg px-8">
 								Learn More
@@ -88,9 +91,17 @@ export default function HeroSection() {
 					</motion.div>
 				</div>
 			</div>
+
+			<SignupDialog
+				open={showSignup}
+				onOpenChange={setShowSignup}
+				onLoginClick={() => setShowLogin(true)}
+			/>
+			<LoginDialog
+				open={showLogin}
+				onOpenChange={setShowLogin}
+				onSignupClick={() => setShowSignup(true)}
+			/>
 		</section>
 	)
 }
-
-// Import CheckSquare icon
-import { CheckSquare } from 'lucide-react'

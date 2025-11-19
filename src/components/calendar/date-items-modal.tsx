@@ -24,9 +24,9 @@ interface DateItemsModalProps {
 }
 
 const priorityColors = {
-	low: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300',
-	medium: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
-	high: 'bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-300',
+	low: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400',
+	medium: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400',
+	high: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400',
 }
 
 export default function DateItemsModal({

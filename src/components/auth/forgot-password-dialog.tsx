@@ -85,9 +85,9 @@ export function ForgotPasswordDialog({ open, onOpenChange, defaultEmail = '' }: 
               />
             </div>
             {message && (
-              <div className={`text-sm p-3 rounded-lg ${message.type === 'success'
-                  ? 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300'
-                  : 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300'
+              <div className={`text-sm p-3 rounded-lg border ${message.type === 'success'
+                  ? 'bg-primary/10 text-primary border-primary/20'
+                  : 'bg-destructive/10 text-destructive border-destructive/20'
                 }`}>
                 {message.text}
               </div>

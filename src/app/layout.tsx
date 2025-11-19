@@ -6,7 +6,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Tudu',
+  title: 'CheckIt',
   description: 'A modern todo application built with Next.js 14 and Supabase',
 }
 
