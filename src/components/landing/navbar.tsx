@@ -18,7 +18,7 @@ export default function Navbar() {
 						<div className="w-8 h-8 rounded-lg bg-linear-to-br from-primary to-primary/70 flex items-center justify-center">
 							<CheckSquare className="h-5 w-5 text-primary-foreground" />
 						</div>
-						<span className="text-xl font-bold">TodoApp</span>
+						<span className="text-xl font-bold">Tudu</span>
 					</Link>
 
 					<div className="flex items-center gap-4">

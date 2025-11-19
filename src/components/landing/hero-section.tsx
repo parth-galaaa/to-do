@@ -35,18 +35,8 @@ export default function HeroSection() {
 				className="absolute bottom-20 right-10 w-32 h-32 rounded-full bg-secondary/10 blur-2xl"
 			/>
 
-			<div className="container mx-auto px-4 relative z-10">
+			<div className="container mx-auto px-4 relative z-10 mt-8">
 				<div className="max-w-4xl mx-auto text-center space-y-8">
-					<motion.div
-						initial={{ opacity: 0, y: 20 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.5 }}
-						className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium"
-					>
-						<Sparkles className="h-4 w-4" />
-						<span>Organize your life effortlessly</span>
-					</motion.div>
-
 					<motion.h1
 						initial={{ opacity: 0, y: 20 }}
 						animate={{ opacity: 1, y: 0 }}
@@ -95,14 +85,6 @@ export default function HeroSection() {
 						transition={{ duration: 0.5, delay: 0.4 }}
 						className="mt-16 relative"
 					>
-						<div className="rounded-2xl overflow-hidden shadow-2xl border bg-card">
-							<div className="aspect-video bg-linear-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-								<div className="text-center space-y-2">
-									<CheckSquare className="h-16 w-16 mx-auto text-primary" />
-									<p className="text-sm text-muted-foreground">App Preview</p>
-								</div>
-							</div>
-						</div>
 					</motion.div>
 				</div>
 			</div>

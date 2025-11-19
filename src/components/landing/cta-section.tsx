@@ -64,7 +64,7 @@ export default function CTASection() {
 								</Button>
 							</Link>
 							<p className="text-sm text-muted-foreground">
-								No credit card required • Free forever
+								• Free forever
 							</p>
 						</div>
 					</div>

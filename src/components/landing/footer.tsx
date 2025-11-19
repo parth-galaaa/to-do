@@ -76,7 +76,7 @@ export default function Footer() {
 				</div>
 
 				<div className="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">
-					<p>&copy; {currentYear} TodoApp. All rights reserved.</p>
+					<p>&copy; {currentYear} Tudu. All rights reserved.</p>
 				</div>
 			</div>
 		</footer>
